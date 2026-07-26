@@ -4,7 +4,7 @@ Name "Nullchat"
 OutFile "Nullchat-Setup.exe"
 InstallDir "$PROGRAMFILES64\Nullchat"
 RequestExecutionLevel admin
-Icon "nullchat.ico"
+Icon "packaging\nullchat.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
@@ -15,8 +15,14 @@ Icon "nullchat.ico"
 
 Section "Install"
   SetOutPath "$INSTDIR\bin"
-  File /r "build\src\client\Release\*.*"
+  File "build\src\client\Release\chatter.exe"
   File "build\src\server\Release\chatter-server.exe"
+  File /r "build\src\client\Release\*.dll"
+  File /r "build\src\client\Release\*.qml"
+  File /r "build\src\client\Release\plugins\"
+  File /r "build\src\client\Release\platforms\"
+  File /r "build\src\client\Release\sqldrivers\"
+  File /r "build\src\client\Release\styles\"
   File "nullchat.example.json"
 
   CreateDirectory "$SMPROGRAMS\Nullchat"
