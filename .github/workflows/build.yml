@@ -61,31 +61,24 @@ jobs:
           path: Nullchat-x86_64.AppImage
 
   windows:
-    runs-on: windows-2025
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt6 via vcpkg
-        run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
-          C:\vcpkg\vcpkg install qt6 --triplet x64-windows
-          echo "Qt6_DIR=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
+      - name: Install Qt6
+        run: choco install -y --no-progress qt6-base
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="C:\Qt\6.7.0\msvc2022_64"
 
       - name: Build
         run: cmake --build build -j --config Release
 
       - name: Deploy Qt DLLs
-        run: |
-          windeployqt build\src\client\Release\chatter.exe
+        run: windeployqt build\src\client\Release\chatter.exe
 
       - name: Create NSIS installer
         run: |
