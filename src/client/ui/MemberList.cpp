@@ -52,7 +52,7 @@ void MemberList::addMember(const std::string& id, const std::string& name,
     row_layout->addStretch();
 
     layout_->addWidget(row);
-    members_[id] = {id, name, online, is_null, row};
+    members_[id] = {id, name, online, is_null, row, dot};
     updateCount();
 }
 
@@ -60,12 +60,9 @@ void MemberList::setOnline(const std::string& id, bool online) {
     auto it = members_.find(id);
     if (it == members_.end()) return;
     it->second.online = online;
-    if (it->second.widget) {
-        auto* dot = it->second.widget->findChildren<QLabel*>().first();
-        if (dot)
-            dot->setStyleSheet(QString("background: %1; border: none;")
-                .arg(online ? "#33ff33" : "#1a1a1a"));
-    }
+    if (it->second.dot)
+        it->second.dot->setStyleSheet(QString("background: %1; border: none;")
+            .arg(online ? "#33ff33" : "#1a1a1a"));
     updateCount();
 }
 

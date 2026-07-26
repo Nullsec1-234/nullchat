@@ -2,10 +2,10 @@
 
 #include <QWidget>
 #include <string>
+#include <QLabel>
 #include <unordered_map>
 
 class QVBoxLayout;
-class QLabel;
 
 namespace chatter {
 
@@ -26,6 +26,7 @@ private:
         bool online = false;
         bool is_null = false;
         QWidget* widget = nullptr;
+        QLabel* dot = nullptr;
     };
 
     QVBoxLayout* layout_;
