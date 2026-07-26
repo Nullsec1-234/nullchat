@@ -28,6 +28,7 @@
 #include <QJsonObject>
 #include <QDir>
 #include <QFile>
+#include <QStandardPaths>
 
 bool EnterFilter::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
@@ -44,9 +45,9 @@ namespace chatter {
 
 static QStringList configPaths() {
     auto portable = QDir(QCoreApplication::applicationDirPath()).filePath("nullchat.json");
+    auto xdg = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/nullchat.json";
     auto home = QDir::homePath() + "/.nullchat.json";
-    auto xdg = QDir::homePath() + "/.config/nullchat.json";
-    return {portable, home, xdg};
+    return {xdg, home, portable};
 }
 
 static QJsonObject loadConfig() {
@@ -411,18 +412,24 @@ void MainWindow::onAuthError(const std::string& error) {
 }
 
 void MainWindow::onMessageReceived(const ChatMessage& msg) {
-    chat_widget_->addMessage(msg);
-    store_->saveMessage(msg);
-    if (msg.group_id.empty() && msg.sender_id != user_id_)
-        channel_list_->addOrUpdateContact(msg.sender_id, msg.sender_name, true);
-    member_list_->addMember(msg.sender_id, msg.sender_name, true, false);
+    auto m = msg;
+    if (m.id.empty())
+        m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
+    chat_widget_->addMessage(m);
+    store_->saveMessage(m);
+    if (m.group_id.empty() && m.sender_id != user_id_)
+        channel_list_->addOrUpdateContact(m.sender_id, m.sender_name, true);
+    member_list_->addMember(m.sender_id, m.sender_name, true, false);
 }
 
 void MainWindow::onGroupMessageReceived(const ChatMessage& msg) {
-    chat_widget_->addMessage(msg);
-    store_->saveMessage(msg);
-    if (msg.sender_id != user_id_)
-        member_list_->addMember(msg.sender_id, msg.sender_name, true, false);
+    auto m = msg;
+    if (m.id.empty())
+        m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
+    chat_widget_->addMessage(m);
+    store_->saveMessage(m);
+    if (m.sender_id != user_id_)
+        member_list_->addMember(m.sender_id, m.sender_name, true, false);
 }
 
 void MainWindow::onUserOnline(const std::string& user_id, const std::string& username) {

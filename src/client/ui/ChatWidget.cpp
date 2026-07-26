@@ -27,8 +27,8 @@ ChatWidget::ChatWidget(QWidget* parent)
 
 void ChatWidget::addMessage(const ChatMessage& msg) {
     auto time = QDateTime::fromMSecsSinceEpoch(msg.timestamp).toString("HH:mm");
-    auto sender = QString::fromStdString(msg.sender_name);
-    auto content = QString::fromStdString(msg.content);
+    auto sender = QString::fromStdString(msg.sender_name).toHtmlEscaped();
+    auto content = QString::fromStdString(msg.content).toHtmlEscaped();
 
     // Highlight @mentions
     content.replace(QRegularExpression("@(\\w+)"), "<span style=\"color:#46ff7b;font-weight:bold\">@\\1</span>");

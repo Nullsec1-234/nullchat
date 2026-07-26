@@ -6,12 +6,15 @@
 #include <QSqlError>
 #include <QCoreApplication>
 #include <QDir>
+#include <QStandardPaths>
 #include <QDebug>
 
 namespace chatter {
 
 MessageStore::MessageStore() {
-    auto path = QCoreApplication::applicationDirPath() + "/nullchat.db";
+    auto dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dir);
+    auto path = dir + "/nullchat.db";
     auto* db = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE", "msg_store"));
     db->setDatabaseName(path);
     if (!db->open()) {
