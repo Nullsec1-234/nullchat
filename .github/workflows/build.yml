@@ -28,15 +28,30 @@ jobs:
 
       - name: Build AppImage
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons
+          mkdir -p AppDir/usr/bin \
+            AppDir/usr/share/applications \
+            AppDir/usr/share/icons/hicolor/256x256/apps
           cp build/src/client/chatter AppDir/usr/bin/
           cp build/src/server/chatter-server AppDir/usr/bin/
-          cp packaging/chatter.desktop.in AppDir/usr/share/applications/chatter.desktop
-          convert packaging/nullchat.png -resize 256x256 AppDir/nullchat.png
-          convert packaging/nullchat.png -resize 256x256 AppDir/usr/share/icons/nullchat.png
+          cp packaging/nullchat.png AppDir/usr/share/icons/hicolor/256x256/apps/nullchat.png
+          cp packaging/nullchat.png AppDir/nullchat.png
+          ln -sf nullchat.png AppDir/.DirIcon
+          cat > AppDir/nullchat.desktop << 'EOF'
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=Nullchat
+          Comment=Encrypted terminal-style chat
+          Exec=chatter
+          Icon=nullchat
+          Terminal=false
+          Categories=Network;InstantMessaging;
+          EOF
+          cp AppDir/nullchat.desktop AppDir/usr/share/applications/
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          chmod +x linuxdeploy-x86_64.AppImage
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
           mv Nullchat-*.AppImage Nullchat-x86_64.AppImage
 
       - name: Upload AppImage
@@ -55,7 +70,6 @@ jobs:
         with:
           version: '6.7.0'
           arch: 'win64_msvc2022_64'
-          modules: 'qt5compat'
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
