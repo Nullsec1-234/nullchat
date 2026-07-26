@@ -75,11 +75,12 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-qt6-base
             mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-ninja
             mingw-w64-x86_64-openssl
             mingw-w64-x86_64-nsis
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G "MSYS Makefiles"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
 
       - name: Build
         run: cmake --build build -j
