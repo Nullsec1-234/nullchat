@@ -17,6 +17,8 @@ public:
     void addOrUpdateContact(const std::string& id, const std::string& name, bool online);
     void setOnline(const std::string& id, bool online);
     void updateLastMessage(const std::string& id, const std::string& content, int64_t timestamp);
+    void incrementUnread(const std::string& id);
+    void clearUnread(const std::string& id);
     std::string contactName(const std::string& id) const;
     void selectFirst();
 
@@ -38,6 +40,7 @@ private:
         std::string id;
         std::string name;
         std::string last_message;
+        int unread = 0;
     };
     std::unordered_map<std::string, ContactInfo> contacts_;
     bool is_admin_ = false;

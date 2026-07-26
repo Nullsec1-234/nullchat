@@ -22,18 +22,27 @@ ContactList::ContactList(QWidget* parent)
     connect(list_, &QListWidget::customContextMenuRequested, this, &ContactList::onContextMenu);
 }
 
-void ContactList::addOrUpdateContact(const std::string& id, const std::string& name, bool online) {
-    contacts_[id] = {id, name, ""};
+static const char* UNREAD_BULLET = "● ";
 
-    for (int i = 0; i < list_->count(); ++i) {
-        auto* item = list_->item(i);
-        if (item->data(Qt::UserRole).toString().toStdString() == id) {
-            item->setText(QString::fromStdString(name));
-            return;
+static std::string displayName(const std::string& name, int unread) {
+    return unread > 0 ? UNREAD_BULLET + name : name;
+}
+
+void ContactList::addOrUpdateContact(const std::string& id, const std::string& name, bool online) {
+    auto it = contacts_.find(id);
+    if (it != contacts_.end()) {
+        it->second.name = name;
+        for (int i = 0; i < list_->count(); ++i) {
+            auto* item = list_->item(i);
+            if (item->data(Qt::UserRole).toString().toStdString() == id) {
+                item->setText(QString::fromStdString(displayName(name, it->second.unread)));
+                return;
+            }
         }
     }
 
-    auto* item = new QListWidgetItem(QString::fromStdString(name), list_);
+    contacts_[id] = {id, name, "", 0};
+    auto* item = new QListWidgetItem(QString::fromStdString(displayName(name, 0)), list_);
     item->setData(Qt::UserRole, QString::fromStdString(id));
     list_->addItem(item);
 }
@@ -48,6 +57,32 @@ void ContactList::setOnline(const std::string& id, bool online) {
             else if (!online)
                 item->setText(text.replace(" (online)", ""));
             break;
+        }
+    }
+}
+
+void ContactList::incrementUnread(const std::string& id) {
+    auto it = contacts_.find(id);
+    if (it == contacts_.end()) return;
+    it->second.unread++;
+    for (int i = 0; i < list_->count(); ++i) {
+        auto* item = list_->item(i);
+        if (item->data(Qt::UserRole).toString().toStdString() == id) {
+            item->setText(QString::fromStdString(displayName(it->second.name, it->second.unread)));
+            return;
+        }
+    }
+}
+
+void ContactList::clearUnread(const std::string& id) {
+    auto it = contacts_.find(id);
+    if (it == contacts_.end()) return;
+    it->second.unread = 0;
+    for (int i = 0; i < list_->count(); ++i) {
+        auto* item = list_->item(i);
+        if (item->data(Qt::UserRole).toString().toStdString() == id) {
+            item->setText(QString::fromStdString(displayName(it->second.name, 0)));
+            return;
         }
     }
 }

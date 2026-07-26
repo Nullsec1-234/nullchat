@@ -323,6 +323,7 @@ void MainWindow::buildApp() {
     });
     connect(channel_list_, &ContactList::contactSelected, this, [this](const std::string& id) {
         current_channel_id_ = id;
+        channel_list_->clearUnread(id);
         auto name = channel_list_->contactName(id);
         chat_header_->setText(QString("  > #%1").arg(QString::fromStdString(name)));
         message_input_->setPlaceholderText(QString("> message #%1...").arg(QString::fromStdString(name)));
@@ -405,8 +406,11 @@ void MainWindow::onMessageReceived(const ChatMessage& msg) {
     if (m.id.empty())
         m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
     store_->saveMessage(m);
-    if (m.group_id.empty() && m.sender_id != user_id_)
+    if (m.group_id.empty() && m.sender_id != user_id_) {
         channel_list_->addOrUpdateContact(m.sender_id, m.sender_name, true);
+        if (m.sender_id != current_channel_id_)
+            channel_list_->incrementUnread(m.sender_id);
+    }
     member_list_->addMember(m.sender_id, m.sender_name, true, false);
 }
 
@@ -416,6 +420,8 @@ void MainWindow::onGroupMessageReceived(const ChatMessage& msg) {
         m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
     if (m.group_id == current_channel_id_)
         chat_widget_->addMessage(m);
+    else
+        channel_list_->incrementUnread(m.group_id);
     store_->saveMessage(m);
     if (m.sender_id != user_id_)
         member_list_->addMember(m.sender_id, m.sender_name, true, false);
