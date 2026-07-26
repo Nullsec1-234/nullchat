@@ -144,7 +144,16 @@ bool ClientNetwork::connectAndRegister(const std::string& host, uint16_t port,
                 if (status == "ok") {
                     user_id_ = resp["user_id"].toString().toStdString();
                     username_ = resp["username"].toString().toStdString();
+                    is_null_ = resp["is_null"].toBool();
                     authenticated_ = true;
+                    initial_groups_.clear();
+                    for (const auto& g : resp["groups"].toArray()) {
+                        auto go = g.toObject();
+                        ClientNetwork::GroupEntry entry;
+                        entry.id = go["id"].toString().toStdString();
+                        entry.name = go["name"].toString().toStdString();
+                        initial_groups_.push_back(entry);
+                    }
                     emit authSuccess(user_id_, username_);
                     return true;
                 } else {
@@ -287,11 +296,11 @@ void ClientNetwork::onReadyRead() {
             socket_->disconnectFromHost();
             return;
         }
-        size_t total = sizeof(PacketHeader) + hdr.length;
+        size_t total = sizeof(PacketHeader) + qFromBigEndian(hdr.length);
         if (static_cast<size_t>(read_buffer_.size()) < total)
             return;
 
-        std::string body(read_buffer_.constData() + sizeof(PacketHeader), hdr.length);
+        std::string body(read_buffer_.constData() + sizeof(PacketHeader), qFromBigEndian(hdr.length));
         read_buffer_.remove(0, static_cast<qsizetype>(total));
         handlePacket(hdr.type, body);
     }
