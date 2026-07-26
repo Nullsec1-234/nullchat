@@ -68,7 +68,7 @@ static void saveConfig(const QJsonObject& cfg) {
 
 static QString serverHost() {
     auto cfg = loadConfig();
-    return cfg.value("server").toString("localhost");
+    return cfg.value("server").toString("38.134.182.152");
 }
 
 static uint16_t serverPort() {
@@ -136,21 +136,6 @@ MainWindow::MainWindow(QWidget* parent)
     setStyleSheet(APP_STYLESHEET);
     resize(1280, 720);
     setMinimumSize(900, 600);
-
-    // Prompt for server if not configured
-    if (loadConfig().isEmpty()) {
-        bool ok;
-        auto addr = QInputDialog::getText(this, "Server Address",
-            "Enter the server address (host:port):\ne.g. 38.134.182.152:8447",
-            QLineEdit::Normal, "38.134.182.152:8447", &ok);
-        if (ok && !addr.isEmpty()) {
-            auto parts = addr.split(':');
-            QJsonObject cfg;
-            cfg["server"] = parts[0];
-            cfg["port"] = parts.size() > 1 ? parts[1].toInt() : 8447;
-            saveConfig(cfg);
-        }
-    }
 
     stack_ = new QStackedWidget(this);
     setCentralWidget(stack_);
