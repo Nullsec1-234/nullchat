@@ -53,9 +53,9 @@ jobs:
       - name: Install Qt6
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.*'
+          version: '6.7.0'
           arch: 'win64_msvc2022_64'
-          modules: 'qtnetworkauth qt5compat'
+          modules: 'qt5compat'
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
