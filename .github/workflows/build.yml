@@ -65,16 +65,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt6 via vcpkg
-        run: C:\vcpkg\vcpkg install qt6-base:x64-windows --binarysource=default
+      - name: Install Qt6 via aqt
+        run: |
+          pip install aqtinstall
+          aqt list-qt windows desktop --arch win64_msvc2022_64
+          aqt install-qt --outputdir C:\Qt windows desktop 6.5.3 win64_msvc2022_64
+          echo "Qt6_DIR=C:\Qt\6.5.3\msvc2022_64" >> $env:GITHUB_ENV
+          echo "C:\Qt\6.5.3\msvc2022_64\bin" >> $env:GITHUB_PATH
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake `
-          -DVCPKG_TARGET_TRIPLET=x64-windows
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
 
       - name: Build
         run: cmake --build build -j --config Release
