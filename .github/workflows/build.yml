@@ -62,33 +62,34 @@ jobs:
 
   windows:
     runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt6 via aqt
-        run: |
-          pip install aqtinstall
-          aqt list-qt windows desktop --arch win64_msvc2022_64
-          aqt install-qt --outputdir C:\Qt windows desktop 6.5.3 win64_msvc2022_64
-          echo "Qt6_DIR=C:\Qt\6.5.3\msvc2022_64" >> $env:GITHUB_ENV
-          echo "C:\Qt\6.5.3\msvc2022_64\bin" >> $env:GITHUB_PATH
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-nsis
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G "MSYS Makefiles"
 
       - name: Build
-        run: cmake --build build -j --config Release
+        run: cmake --build build -j
 
       - name: Deploy Qt DLLs
-        run: windeployqt build\src\client\Release\chatter.exe
+        run: |
+          windeployqt build/src/client/chatter.exe
 
       - name: Create NSIS installer
-        run: |
-          choco install -y --no-progress nsis
-          makensis packaging\installer.nsi
+        run: makensis packaging/installer.nsi
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
