@@ -197,9 +197,9 @@ void MainWindow::onSplashFinished() {
                 auto pass = saved.substr(sep + 1);
                 splash_->setStatus(QString("auto-login as %1...").arg(QString::fromStdString(user)));
                 network_->setPublicKey(crypto_->getECPublicKey());
-                network_->connectAndLogin(serverHost().toStdString(), serverPort(), user, pass,
-                                           crypto_->getECPublicKey());
-                return;
+                if (network_->connectAndLogin(serverHost().toStdString(), serverPort(), user, pass,
+                                               crypto_->getECPublicKey()))
+                    return;
             }
         }
     }
@@ -391,16 +391,19 @@ void MainWindow::onAuthSuccess(const std::string& user_id, const std::string& us
 }
 
 void MainWindow::onAuthError(const std::string& error) {
-    login_dialog_->setConnecting(false);
-    splash_->setStatus(QString::fromStdString(error));
-    QMessageBox::warning(login_dialog_, "error", QString::fromStdString(error));
+    if (login_dialog_) {
+        login_dialog_->setConnecting(false);
+        splash_->setStatus(QString::fromStdString(error));
+        QMessageBox::warning(login_dialog_, "error", QString::fromStdString(error));
+    } else {
+        splash_->setStatus(QString("auth failed: %1").arg(QString::fromStdString(error)));
+    }
 }
 
 void MainWindow::onMessageReceived(const ChatMessage& msg) {
     auto m = msg;
     if (m.id.empty())
         m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
-    chat_widget_->addMessage(m);
     store_->saveMessage(m);
     if (m.group_id.empty() && m.sender_id != user_id_)
         channel_list_->addOrUpdateContact(m.sender_id, m.sender_name, true);
@@ -411,7 +414,8 @@ void MainWindow::onGroupMessageReceived(const ChatMessage& msg) {
     auto m = msg;
     if (m.id.empty())
         m.id = std::to_string(m.timestamp) + "_" + m.sender_id;
-    chat_widget_->addMessage(m);
+    if (m.group_id == current_channel_id_)
+        chat_widget_->addMessage(m);
     store_->saveMessage(m);
     if (m.sender_id != user_id_)
         member_list_->addMember(m.sender_id, m.sender_name, true, false);

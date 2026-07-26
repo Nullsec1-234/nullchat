@@ -377,7 +377,8 @@ class Session {
       if (json.publicKey) db.setPublicKey(this.userId, json.publicKey);
 
       this.send(MT.AuthResponse,
-        JSON.stringify({ status: 'ok', user_id: result.id, username: result.username }));
+        JSON.stringify({ status: 'ok', user_id: result.id, username: result.username,
+          is_null: false, groups: db.getUserGroups(result.id) }));
       broadcastStatus(this.userId, this.username, true);
 
       // Welcome messages
