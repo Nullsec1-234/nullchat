@@ -24,6 +24,10 @@
 #include <QFrame>
 #include <QApplication>
 #include <QInputDialog>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDir>
+#include <QFile>
 
 bool EnterFilter::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
@@ -38,8 +42,32 @@ bool EnterFilter::eventFilter(QObject* obj, QEvent* event) {
 
 namespace chatter {
 
-constexpr auto SERVER_HOST = "38.134.182.152";
-constexpr uint16_t SERVER_PORT = 8447;
+static QString configPath() {
+    return QDir(QCoreApplication::applicationDirPath()).filePath("nullchat.json");
+}
+
+static QJsonObject loadConfig() {
+    QFile f(configPath());
+    if (f.open(QIODevice::ReadOnly))
+        return QJsonDocument::fromJson(f.readAll()).object();
+    return {};
+}
+
+static void saveConfig(const QJsonObject& cfg) {
+    QFile f(configPath());
+    if (f.open(QIODevice::WriteOnly))
+        f.write(QJsonDocument(cfg).toJson());
+}
+
+static QString serverHost() {
+    auto cfg = loadConfig();
+    return cfg.value("server").toString("localhost");
+}
+
+static uint16_t serverPort() {
+    auto cfg = loadConfig();
+    return static_cast<uint16_t>(cfg.value("port").toInt(8447));
+}
 
 static const char* APP_STYLESHEET = R"(
 QMainWindow, QWidget {
@@ -162,7 +190,7 @@ void MainWindow::onSplashFinished() {
                 auto pass = saved.substr(sep + 1);
                 splash_->setStatus(QString("auto-login as %1...").arg(QString::fromStdString(user)));
                 network_->setPublicKey(crypto_->getECPublicKey());
-                network_->connectAndLogin(SERVER_HOST, SERVER_PORT, user, pass,
+                network_->connectAndLogin(serverHost().toStdString(), serverPort(), user, pass,
                                            crypto_->getECPublicKey());
                 return;
             }
@@ -319,7 +347,7 @@ void MainWindow::onLoginRequested(const std::string& username, const std::string
     splash_->setStatus(QString("logging in as %1...").arg(QString::fromStdString(username)));
     last_password_ = password;
     network_->setPublicKey(crypto_->getECPublicKey());
-    network_->connectAndLogin(SERVER_HOST, SERVER_PORT, username, password, crypto_->getECPublicKey());
+    network_->connectAndLogin(serverHost().toStdString(), serverPort(), username, password, crypto_->getECPublicKey());
 }
 
 void MainWindow::onRegisterRequested(const std::string& username, const std::string& password,
@@ -328,7 +356,7 @@ void MainWindow::onRegisterRequested(const std::string& username, const std::str
     splash_->setStatus(QString("registering %1...").arg(QString::fromStdString(username)));
     last_password_ = password;
     network_->setPublicKey(crypto_->getECPublicKey());
-    network_->connectAndRegister(SERVER_HOST, SERVER_PORT, username, password,
+    network_->connectAndRegister(serverHost().toStdString(), serverPort(), username, password,
                                  crypto_->getECPublicKey(), invite_password);
 }
 

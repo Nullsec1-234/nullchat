@@ -1,0 +1,83 @@
+name: Build
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cmake g++ qt6-base-dev libqt6sql6-sqlite \
+            libssl-dev libgl1-mesa-dev file
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Build AppImage
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons
+          cp build/src/client/chatter AppDir/usr/bin/
+          cp build/src/server/chatter-server AppDir/usr/bin/
+          cp packaging/chatter.desktop.in AppDir/usr/share/applications/chatter.desktop
+          convert packaging/nullchat.png -resize 256x256 AppDir/nullchat.png
+          convert packaging/nullchat.png -resize 256x256 AppDir/usr/share/icons/nullchat.png
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
+          mv Nullchat-*.AppImage Nullchat-x86_64.AppImage
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nullchat-Linux
+          path: Nullchat-x86_64.AppImage
+
+  windows:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6
+        run: |
+          choco install -y --no-progress qt6-win64
+          echo "C:\Qt\6.x\msvc2022_64\bin" >> %GITHUB_PATH%
+
+      - name: Configure CMake
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2025\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:\Qt\6.x\msvc2022_64
+
+      - name: Build
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2025\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake --build build -j --config Release
+
+      - name: Deploy Qt DLLs
+        run: |
+          windeployqt build\src\client\Release\chatter.exe
+
+      - name: Create NSIS installer
+        run: |
+          choco install -y --no-progress nsis
+          makensis packaging\installer.nsi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nullchat-Windows
+          path: build\Nullchat-*.exe

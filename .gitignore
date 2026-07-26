@@ -17,3 +17,7 @@ ui_*
 *.dylib
 .DS_Store
 Thumbs.db
+nullchat.json
+Nullchat-x86_64.AppImage
+*.AppImage
+packaging/nullchat.png
