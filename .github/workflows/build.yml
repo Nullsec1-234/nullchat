@@ -72,6 +72,7 @@ jobs:
         with:
           update: true
           install: >-
+            mingw-w64-x86_64-gcc
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-qt6-base
             mingw-w64-x86_64-qt6-tools
@@ -80,7 +81,10 @@ jobs:
             mingw-w64-x86_64-nsis
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+        run: |
+          export CC=gcc
+          export CXX=g++
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
 
       - name: Build
         run: cmake --build build -j
