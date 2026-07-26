@@ -65,17 +65,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt6
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.7.0'
-          arch: 'win64_msvc2022_64'
+      - name: Install Qt6 via aqt
+        run: |
+          pip install aqtinstall
+          aqt install-qt --outputdir C:\Qt windows desktop 6.7.0 win64_msvc2022_64
+          echo "C:\Qt\6.7.0\msvc2022_64\bin" >> $env:GITHUB_PATH
+          echo "Qt6_DIR=C:\Qt\6.7.0\msvc2022_64" >> $env:GITHUB_ENV
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
 
       - name: Build
         run: cmake --build build -j --config Release
