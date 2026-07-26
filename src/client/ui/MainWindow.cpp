@@ -42,19 +42,25 @@ bool EnterFilter::eventFilter(QObject* obj, QEvent* event) {
 
 namespace chatter {
 
-static QString configPath() {
-    return QDir(QCoreApplication::applicationDirPath()).filePath("nullchat.json");
+static QStringList configPaths() {
+    auto portable = QDir(QCoreApplication::applicationDirPath()).filePath("nullchat.json");
+    auto home = QDir::homePath() + "/.nullchat.json";
+    auto xdg = QDir::homePath() + "/.config/nullchat.json";
+    return {portable, home, xdg};
 }
 
 static QJsonObject loadConfig() {
-    QFile f(configPath());
-    if (f.open(QIODevice::ReadOnly))
-        return QJsonDocument::fromJson(f.readAll()).object();
+    for (const auto& p : configPaths()) {
+        QFile f(p);
+        if (f.open(QIODevice::ReadOnly))
+            return QJsonDocument::fromJson(f.readAll()).object();
+    }
     return {};
 }
 
 static void saveConfig(const QJsonObject& cfg) {
-    QFile f(configPath());
+    auto paths = configPaths();
+    QFile f(paths.first());
     if (f.open(QIODevice::WriteOnly))
         f.write(QJsonDocument(cfg).toJson());
 }
@@ -129,6 +135,21 @@ MainWindow::MainWindow(QWidget* parent)
     setStyleSheet(APP_STYLESHEET);
     resize(1280, 720);
     setMinimumSize(900, 600);
+
+    // Prompt for server if not configured
+    if (loadConfig().isEmpty()) {
+        bool ok;
+        auto addr = QInputDialog::getText(this, "Server Address",
+            "Enter the server address (host:port):\ne.g. 38.134.182.152:8447",
+            QLineEdit::Normal, "38.134.182.152:8447", &ok);
+        if (ok && !addr.isEmpty()) {
+            auto parts = addr.split(':');
+            QJsonObject cfg;
+            cfg["server"] = parts[0];
+            cfg["port"] = parts.size() > 1 ? parts[1].toInt() : 8447;
+            saveConfig(cfg);
+        }
+    }
 
     stack_ = new QStackedWidget(this);
     setCentralWidget(stack_);
