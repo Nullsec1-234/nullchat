@@ -4,7 +4,7 @@ Name "Nullchat"
 OutFile "Nullchat-Setup.exe"
 InstallDir "$PROGRAMFILES64\Nullchat"
 RequestExecutionLevel admin
-Icon "packaging\nullchat.ico"
+;Icon "packaging\nullchat.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
