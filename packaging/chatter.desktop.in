@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Nullchat
+Comment=Encrypted terminal-style chat application
+Exec=chatter
+Icon=nullchat
+Terminal=false
+Categories=Network;InstantMessaging;
+StartupNotify=true
