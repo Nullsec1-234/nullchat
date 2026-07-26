@@ -62,9 +62,6 @@ jobs:
 
   windows:
     runs-on: windows-2022
-    defaults:
-      run:
-        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
 
@@ -81,26 +78,44 @@ jobs:
             mingw-w64-x86_64-nsis
 
       - name: Configure
-        run: |
-          export CC=gcc
-          export CXX=g++
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+        shell: msys2 {0}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
 
       - name: Build
+        shell: msys2 {0}
         run: cmake --build build -j
 
       - name: Deploy Qt DLLs
+        shell: msys2 {0}
+        run: windeployqt --release build/src/client/chatter.exe
+
+      - name: Package zip
+        shell: pwsh
         run: |
-          windeployqt build/src/client/chatter.exe
+          mkdir Nullchat-Win64
+          cp build/src/client/chatter.exe Nullchat-Win64/
+          cp build/src/server/chatter-server.exe Nullchat-Win64/
+          Get-ChildItem build/src/client/*.dll | Copy-Item -Destination Nullchat-Win64/
+          if (Test-Path build/src/client/platforms) {
+            Copy-Item -Recurse build/src/client/platforms Nullchat-Win64/
+          }
+          if (Test-Path build/src/client/sqldrivers) {
+            Copy-Item -Recurse build/src/client/sqldrivers Nullchat-Win64/
+          }
+          if (Test-Path build/src/client/styles) {
+            Copy-Item -Recurse build/src/client/styles Nullchat-Win64/
+          }
+          if (Test-Path build/src/client/imageformats) {
+            Copy-Item -Recurse build/src/client/imageformats Nullchat-Win64/
+          }
+          cp nullchat.example.json Nullchat-Win64/
+          Compress-Archive -Path Nullchat-Win64 -DestinationPath Nullchat-Win64.zip
 
-      - name: Create NSIS installer
-        run: makensis packaging/installer.nsi
-
-      - name: Upload installer
+      - name: Upload zip
         uses: actions/upload-artifact@v4
         with:
           name: Nullchat-Windows
-          path: Nullchat-Setup.exe
+          path: Nullchat-Win64.zip
 
   release:
     needs: [linux, windows]
@@ -118,5 +133,5 @@ jobs:
         with:
           files: |
             Nullchat-x86_64.AppImage
-            Nullchat-Setup.exe
+            Nullchat-Win64.zip
           generate_release_notes: true
