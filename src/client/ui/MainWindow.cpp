@@ -29,6 +29,28 @@
 #include <QDir>
 #include <QFile>
 #include <QStandardPaths>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QDesktopServices>
+#include <QUrl>
+
+static const char* APP_VERSION = "v1.0.1";
+
+static bool isNewerVersion(const std::string& current, const std::string& latest) {
+    auto parse = [](const std::string& v) {
+        struct { int maj = 0, min = 0, pat = 0; } ver;
+        auto s = v;
+        if (s.size() > 0 && s[0] == 'v') s = s.substr(1);
+        sscanf(s.c_str(), "%d.%d.%d", &ver.maj, &ver.min, &ver.pat);
+        return ver;
+    };
+    auto cur = parse(current);
+    auto lat = parse(latest);
+    if (lat.maj != cur.maj) return lat.maj > cur.maj;
+    if (lat.min != cur.min) return lat.min > cur.min;
+    return lat.pat > cur.pat;
+}
 
 bool EnterFilter::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
@@ -132,6 +154,7 @@ MainWindow::MainWindow(QWidget* parent)
     , network_(std::make_unique<ClientNetwork>())
     , crypto_(std::make_unique<ClientCrypto>())
     , store_(std::make_unique<MessageStore>())
+    , network_manager_(new QNetworkAccessManager(this))
 {
     setStyleSheet(APP_STYLESHEET);
     resize(1280, 720);
@@ -265,6 +288,14 @@ void MainWindow::buildApp() {
         "font-weight: bold; font-size: 13px; padding-left: 16px; color: #33ff33;"
         "border-bottom: 1px solid #1a1a1a; background: #0a0a0a;");
 
+    update_banner_ = new QLabel(chat_container);
+    update_banner_->setFixedHeight(0);
+    update_banner_->setStyleSheet(
+        "background: #0d2a0d; color: #33ff33; padding: 8px 16px;"
+        " font-size: 12px; border-bottom: 1px solid #1a5a1a;");
+    update_banner_->setOpenExternalLinks(true);
+    update_banner_->setVisible(false);
+
     chat_widget_ = new ChatWidget(chat_container);
     chat_widget_->setStyleSheet("background: #0a0a0a;");
 
@@ -288,6 +319,7 @@ void MainWindow::buildApp() {
     input_layout->addWidget(send_btn_);
 
     chat_layout->addWidget(chat_header_);
+    chat_layout->addWidget(update_banner_);
     chat_layout->addWidget(chat_widget_, 1);
     chat_layout->addWidget(input_container);
 
@@ -348,6 +380,7 @@ void MainWindow::switchToApp() {
     setWindowTitle(QString("nullchat - %1%2")
         .arg(QString::fromStdString(username_))
         .arg(is_null_ ? " [admin]" : ""));
+    checkForUpdate();
 }
 
 void MainWindow::onLoginRequested(const std::string& username, const std::string& password) {
@@ -464,6 +497,28 @@ void MainWindow::onCreateGroup() {
                                        QLineEdit::Normal, "", &ok);
     if (!ok || name.isEmpty()) return;
     network_->createGroup(name.toStdString(), "");
+}
+
+void MainWindow::checkForUpdate() {
+    QNetworkRequest req(QUrl("https://api.github.com/repos/Nullsec1-234/nullchat/releases/latest"));
+    req.setRawHeader("User-Agent", "Nullchat/1.0");
+    req.setRawHeader("Accept", "application/json");
+    auto* reply = network_manager_->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) return;
+        auto doc = QJsonDocument::fromJson(reply->readAll());
+        auto tag = doc.object()["tag_name"].toString().toStdString();
+        if (tag.empty() || !isNewerVersion(APP_VERSION, tag)) return;
+        auto text = QString("<a href=\"https://github.com/Nullsec1-234/nullchat/releases/latest\""
+                            " style=\"color: #33ff33; text-decoration: none;\">"
+                            "update available: %1  > click here to download</a>")
+            .arg(QString::fromStdString(tag));
+        update_banner_->setTextFormat(Qt::RichText);
+        update_banner_->setText(text);
+        update_banner_->setFixedHeight(32);
+        update_banner_->setVisible(true);
+    });
 }
 
 } // namespace chatter

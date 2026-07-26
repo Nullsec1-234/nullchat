@@ -11,6 +11,7 @@ class QPushButton;
 class QListWidget;
 class QListWidgetItem;
 class QLabel;
+class QNetworkAccessManager;
 
 class EnterFilter : public QObject {
     Q_OBJECT
@@ -61,9 +62,9 @@ private:
     void buildSplash();
     void buildApp();
     void switchToApp();
+    void checkForUpdate();
 
     QStackedWidget* stack_;
-
     // Splash
     ASCIISplash* splash_;
 
@@ -79,6 +80,9 @@ private:
     QTextEdit* message_input_;
     QPushButton* send_btn_;
     QLabel* chat_header_;
+
+    QLabel* update_banner_;
+    QNetworkAccessManager* network_manager_;
 
     std::unique_ptr<ClientNetwork> network_;
     std::unique_ptr<P2PManager> p2p_;
